@@ -76,7 +76,23 @@ const rangeModeState={};
 // 四張遊戲截圖：有亮紅「釋放範圍」時亮紅=施放、暗紅=作用；僅暗紅時兩者相同。
 // 不再依原始碼首位數字猜測幾何；只針對已驗證樣本與相同完整代碼做可追溯推算。
 // 先撤回未逐格校準的近似圖形。截圖已取得，但不代表已完成格位轉錄。
-const verifiedRange={};
+// 逐格轉錄：X=亮紅／暗紅範圍格，.=非範圍格，O=人物中心。
+// 僅收錄從使用者截圖可直接辨識的格位；不可將 IL2CPP metadata 中的類別名稱當成演算法。
+const verifiedRange={
+ '含光無形劍':{cast:{mask:['....X....','....X....','....X....','....X....','XXXXOXXXX','....X....','....X....','....X....','....X....']},effect:{mask:['.X.','XOX','.X.']},same:false},
+ '星落九天':{effect:{mask:['XXX','XOX','XXX']},same:false},
+ '鐵索漁網':{effect:{mask:['.X.','XOX','.X.']},same:false},
+ '霹靂雷火彈':{effect:{mask:['XXX','XOX','XXX']},same:false},
+ '飛針要訣':{effect:{mask:['O']},same:false},
+ '善惡鏢':{effect:{mask:['O']},same:false},
+ '合盤掌':{effect:{mask:['O']},same:false},
+ '八極拳':{effect:{mask:['O']},same:false},
+ '靈犀一指':{effect:{mask:['O']},same:false},
+ '三路鞭法':{effect:{mask:['X.X','.O.','X.X']},same:true},
+ '萬化玄機刀':{effect:{mask:['XXX','XOX','XXX']},same:true},
+ '太極拳法':{effect:{mask:['XXX','XOX','XXX']},same:true},
+ '回風拂柳劍':{effect:{mask:['.X.','XOX','.X.']},same:false}
+};
 const inferredRangeCodes={cast:{},effect:{}};
 function artRangeData(a,mode){
  const src=(a.range||a.aoe)?a:nameLookup.get(a.raw||a.name)||a;
@@ -84,7 +100,7 @@ function artRangeData(a,mode){
  const sample=verifiedRange[a.name];
  if(sample){
    const d=(mode==='cast'&&sample.same)?sample.effect:sample[mode];
-   if(d)return {...d,status:'截圖核對',note:sample.same?'遊戲僅顯示暗紅，施放與作用範圍相同':'依遊戲亮紅／暗紅格位重繪',raw:raw||'截圖'};
+   if(d)return {...d,status:'截圖逐格轉錄',note:sample.same?'遊戲僅顯示暗紅，施放與作用範圍相同':'依遊戲截圖逐格轉錄；未收錄模式仍待核',raw:raw||'截圖'};
  }
  if(!raw)return null;
  const inferred=inferredRangeCodes[mode][String(raw)];
@@ -95,20 +111,15 @@ function rangeSame(a){
  const v=verifiedRange[a.name];return !!(v&&v.same);
 }
 function gridSvg(info,name,mode){
- const radius=info.radius??1,size=info.shape==='cross'&&radius>=5?13:9,cell=14,offset=5,mid=Math.floor(size/2);
+ const mask=info.mask;if(!mask||!mask.length)return '';
+ const rows=mask.length,cols=Math.max(...mask.map(r=>r.length)),cell=16,pad=6;
  let rects='';
- for(let y=0;y<size;y++)for(let x=0;x<size;x++){
-  const dx=x-mid,dy=y-mid,d=Math.abs(dx)+Math.abs(dy),r=radius;
-  const hit=info.shape==='square'?Math.max(Math.abs(dx),Math.abs(dy))<=r:
-   info.shape==='diamond'?d<=r:info.shape==='ring'?d>=Math.max(1,r-1)&&d<=r+1:info.shape==='corners'?Math.abs(dx)===r&&Math.abs(dy)===r:info.shape==='checker'?Math.max(Math.abs(dx),Math.abs(dy))<=r&&(Math.abs(dx)+Math.abs(dy))%2===0:
-   info.shape==='cross'?(dx===0&&Math.abs(dy)<=r)||(dy===0&&Math.abs(dx)<=r):
-   info.shape==='star'?((d>=2&&d<=3&&Math.abs(dx)<=3&&Math.abs(dy)<=3)||(d===1&&dx===0)||(d===1&&dy===0)):false;
-  const origin=x===mid&&y===mid,fill=origin?'#e0b979':hit?'#487dba':'#202d3e';
-  rects+='<rect x="'+(offset+x*cell)+'" y="'+(offset+y*cell)+'" width="12" height="12" rx="1.5" fill="'+fill+'"/>';
-  if(origin)rects+='<circle cx="'+(offset+x*cell+6)+'" cy="'+(offset+y*cell+6)+'" r="2.8" fill="#172333"/>';
+ for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){
+  const c=(mask[y]||'')[x]||'.',fill=c==='O'?'#e0b979':c==='X'?'#487dba':'#202d3e';
+  rects+='<rect x="'+(pad+x*cell)+'" y="'+(pad+y*cell)+'" width="14" height="14" rx="1.5" fill="'+fill+'"/>';
+  if(c==='O')rects+='<circle cx="'+(pad+x*cell+7)+'" cy="'+(pad+y*cell+7)+'" r="3" fill="#172333"/>';
  }
- const side=offset*2+size*cell;
- return '<svg viewBox="0 0 '+side+' '+side+'" role="img" aria-label="'+esc(name)+' '+(mode==='cast'?'施放':'作用')+'範圍 '+info.status+'">'+rects+'</svg>';
+ return '<svg viewBox="0 0 '+(cols*cell+pad*2)+' '+(rows*cell+pad*2)+'" role="img" aria-label="'+esc(name)+' '+(mode==='cast'?'施放':'作用')+'範圍逐格圖">'+rects+'</svg>';
 }
 function rangeCell(a,i,j){
  if(['內功','輕功','絕技'].includes(a.role))return '<span class="small">不適用</span>';
@@ -118,8 +129,8 @@ function rangeCell(a,i,j){
  const other=mode==='cast'?'effect':'cast';
  const label=rangeSame(a)?'施放＝作用':mode==='cast'?'施放範圍':'作用範圍';
  if(!cast&&!effect)return '<div class="range-pending">範圍待核<br><span>已取得截圖，逐格校正中</span></div>';
- const actual=info||{shape:'single',radius:1,status:'資料缺漏',note:'此模式沒有範圍代碼'};
- const svg=info?gridSvg(actual,a.name,mode):'<div class="range-missing">施放範圍待核<br><small>原始碼不足以判定格位</small></div>';
+ const actual=info||{status:'資料缺漏',note:'此模式尚未逐格轉錄'};
+ const svg=info?gridSvg(actual,a.name,mode):'<div class="range-missing">此範圍待核<br><small>尚未逐格轉錄</small></div>';
  const controls=rangeSame(a)?'<span class="range-same">施放／作用相同</span>':'<button type="button" aria-label="上一種範圍" onclick="toggleArtRange('+i+','+j+')">‹</button><span>'+label+'</span><button type="button" aria-label="下一種範圍" onclick="toggleArtRange('+i+','+j+')">›</button>';
  return '<div class="range-widget" id="rw-'+key+'"><div class="range-switch">'+controls+'</div><button type="button" class="range-zoom" title="點擊放大" aria-label="放大'+esc(a.name)+label+'" onclick="zoomArtRange('+i+','+j+')">'+svg+'</button><div class="range-status">'+actual.status+'</div></div>';
 }
@@ -138,7 +149,7 @@ function zoomArtRange(i,j){
 }
 function renderFaqRanges(){
  const el=document.getElementById('faq-range-gallery');if(!el)return;
- el.innerHTML='<div class="range-legend"><span><i style="background:#e0b979"></i>中心格</span><span><i style="background:#487dba"></i>示意範圍</span></div><div class="range-gallery">'+Object.keys(confirmedRangeShapes).map(name=>rangeGraphic({name},false)).join('')+'</div><p class="range-caption">先前近似格位圖已撤回。後續只顯示逐格核對完成的圖形，不再用幾何半徑或相同代碼推測命中格。</p>';
+ el.innerHTML='<div class="range-legend"><span><i style="background:#e0b979"></i>中心格</span><span><i style="background:#487dba"></i>示意範圍</span></div><div class="range-gallery">'+Object.keys(confirmedRangeShapes).map(name=>rangeGraphic({name},false)).join('')+'</div><p class="range-caption">已開始依使用者截圖逐格轉錄；目前僅展示可辨識的簡單格位。其餘複雜施放形狀仍待校正，不再依半徑或相同代碼猜測。</p>';
 }
 function rangeGallery(arts){
  const entries=arts.filter(a=>confirmedRangeShapes[a.name]);if(!entries.length)return '';
