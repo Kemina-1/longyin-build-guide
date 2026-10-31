@@ -79,12 +79,14 @@ function artRangeData(a,mode){
  const bits=String(raw).split(',').map(Number);
  if(bits.length!==3||bits.some(x=>!Number.isFinite(x)))return null;
  const [kind,p,q]=bits;
- // 原始碼推測：形狀類別可用於圖解，但格位、方向仍可能依引擎而異。
+ // 施放距離代碼不是可直接畫成幾何格子的半徑；先停用未經驗證的施放圖。
+ // 需要引擎規則或遊戲逐格截圖後才可重新開放。
+ if(mode==='cast')return null;
  const shape=shapeCodes[kind];if(!shape)return null;
  const confirmed=mode==='effect'&&confirmedRangeShapes[a.name];
  if(confirmed)return {shape:confirmed.shape,radius:confirmed.shape==='crossLong'?4:confirmed.shape==='diamond'?3:1,status:'已核對形狀',note:'範圍半徑與方向仍為示意',raw};
  const radius=Math.max(1,Math.min(4,Math.max(p,q,kind===0?1:0)));
- return {shape,radius,status:'代碼推算',note:'尚未逐格實測',raw};
+ return {shape,radius,status:'未驗證作用示意',note:'由代碼初步推測，尚未逐格實測',raw};
 }
 function gridSvg(info,name,mode){
  const size=9,cell=18,offset=7,mid=4;let rects='';
@@ -107,7 +109,7 @@ function rangeCell(a,i,j){
  const label=mode==='cast'?'施放範圍':'作用範圍';
  if(!cast&&!effect)return '<div class="range-pending">範圍待核<br><span>缺少可用範圍資料</span></div>';
  const actual=info||{shape:'single',radius:1,status:'資料缺漏',note:'此模式沒有範圍代碼'};
- const svg=info?gridSvg(actual,a.name,mode):'<div class="range-missing">尚無此類資料</div>';
+ const svg=info?gridSvg(actual,a.name,mode):'<div class="range-missing">施放範圍待核<br><small>原始碼不足以判定格位</small></div>';
  return '<div class="range-widget" id="rw-'+key+'"><div class="range-switch"><button type="button" aria-label="切換範圍" title="切換施放／作用範圍" onclick="toggleArtRange('+i+','+j+')">‹</button><span>'+label+'</span><button type="button" aria-label="切換範圍" title="切換施放／作用範圍" onclick="toggleArtRange('+i+','+j+')">›</button></div><button type="button" class="range-zoom" title="點擊放大" aria-label="放大'+esc(a.name)+label+'" onclick="zoomArtRange('+i+','+j+')">'+svg+'</button><div class="range-status">'+actual.status+'</div></div>';
 }
 function toggleArtRange(i,j){
@@ -120,7 +122,7 @@ function zoomArtRange(i,j){
  const modal=document.getElementById('range-modal');if(!modal)return;
  document.getElementById('range-modal-title').textContent=a.name+' · '+(mode==='cast'?'施放範圍':'作用範圍');
  document.getElementById('range-modal-figure').innerHTML=info?gridSvg(info,a.name,mode):'<p>此模式沒有可用的範圍資料。</p>';
- document.getElementById('range-modal-desc').textContent=info?info.status+'｜'+info.note+'｜原始碼 '+info.raw:'缺少資料';
+ document.getElementById('range-modal-desc').textContent=info?info.status+'｜'+info.note+'｜原始碼 '+info.raw:'施放範圍尚待驗證；不再以原始碼參數直接推算格位。';
  modal.showModal();
 }
 function renderFaqRanges(){
