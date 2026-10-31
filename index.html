@@ -4,6 +4,7 @@
 const factionStarts=[288,319,354,385,421,457,497,527,569,607,647,693,732,761,794,827,858,889,918,955,992];
 const factionNames=['長樂幫','唐門','藥王谷','丐幫','飛龍門','茅山派','鑄劍山莊','五毒教','閻羅殿','大隱閣','少林寺','武當派','霸刀門','蓬萊派','峨眉派','崆峒派','神機門','霹靂堂','金剛密宗','天山派'];
 function factionOf(id){const n=Number(id);if(!Number.isInteger(n)||n<288||n>=992)return '江湖';for(let i=factionNames.length-1;i>=0;i--)if(n>=factionStarts[i])return factionNames[i];return '江湖'}
+function formatEffectValue(value){return zh(String(value)).replace(/(^|[^\d.])(0\.\d+)(?![\d.])/g,(all,prefix,num)=>{const pct=Number((Number(num)*100).toFixed(6));return prefix+pct+'%'})}
 function stageArts(r,i){
  const s=stage();if(s==='graduate')return r.arts;
  const maxQ={early:1,mid:2,late:3}[s],types=['內功','輕功','絕技'];
@@ -21,7 +22,7 @@ function stageArts(r,i){
  const cost=mode()==='original'?-a.level*3:a.level*3;
  return {a,score:hits*15+overlap*3+cost+(a.level===maxQ?5:0)};
  }).sort((x,y)=>y.score-x.score||x.a.id-y.a.id);
- return scored.slice(0,n).map(({a})=>{chosen.add(a.id);return {name:zh(a.name),raw:a.name,type,role:types.includes(type)?type:'外功',q:a.level,source:factionOf(a.id),effect:(a.attrs||[]).map(zh).join('、')||'未記載',power:(a.damageBonus||[]).map(zh).join('、')||'—',training:(a.upgradeEffect||[]).map(zh).join('、')||'未記載',range:'',aoe:''}});
+ return scored.slice(0,n).map(({a})=>{chosen.add(a.id);return {name:zh(a.name),raw:a.name,type,role:types.includes(type)?type:'外功',q:a.level,source:factionOf(a.id),effect:(a.attrs||[]).map(formatEffectValue).join('、')||'未記載',power:(a.damageBonus||[]).map(zh).join('、')||'—',training:(a.upgradeEffect||[]).map(formatEffectValue).join('、')||'未記載',range:'',aoe:''}});
  };
  let out=types.flatMap(t=>pick(t,1));
  const distribution=Object.entries(preferred).sort((a,b)=>b[1]-a[1]);
@@ -102,9 +103,9 @@ const term=document.getElementById('catalog-search').value.trim().toLowerCase(),
 const items=fullArts.filter(a=>(!type||a.type===type)&&(!q||String(a.level)===q)&&(!term||[a.name,artName(a),a.desc,a.type,...(a.attrs||[]),...(a.upgradeEffect||[]),...(a.damageBonus||[])].join(' ').toLowerCase().includes(term)));
 document.getElementById('catalog-count').textContent='武功資料 '+fullArts.length+' 門 · 符合條件 '+items.length+' 門';
 document.getElementById('catalog-results').innerHTML=items.slice(0,catalogLimit).map(a=>{
-const effect=(a.attrs||[]).map(zh).join('、')||'未記載';
+const effect=(a.attrs||[]).map(formatEffectValue).join('、')||'未記載';
 const bonus=(a.damageBonus||[]).map(zh).join('、')||'不適用';
-const training=(a.upgradeEffect||[]).map(zh).join('、')||'未記載';
+const training=(a.upgradeEffect||[]).map(formatEffectValue).join('、')||'未記載';
 return '<article class="catalog-entry"><h3>'+esc(artName(a))+'</h3><div class="small">'+esc(zh(a.type))+' · <span class="q q'+a.level+'">'+qualityNames[a.level]+'</span> · 編號 '+esc(a.id)+'</div><p>'+esc(zh(a.desc||'未記載描述'))+'</p><div class="small"><b>武學附加效果：</b>'+esc(effect)+'</div><div class="small"><b>傷害加成權重：</b>'+esc(bonus)+'</div><div class="small"><b>修煉效果：</b>'+esc(training)+'</div></article>';
 }).join('')||'<p>沒有符合條件的武功。</p>';
 document.getElementById('catalog-more').hidden=items.length<=catalogLimit;
