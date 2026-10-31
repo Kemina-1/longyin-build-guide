@@ -18,12 +18,12 @@ function mode(){return document.getElementById('build-mode').value}
 function stage(){return document.getElementById('build-stage').value}
 function planner(r,i){
 const s=stage(),m=mode(),sidx=stages.indexOf(s);
-const intro=m==='free'?'現有 11 門武學為無限制理論畢業配置。早期階段尚未核對，不會自動編造推薦。':'原版模式請依實際學習順序登記；已學武功永久累計。現有 11 門不等於已驗證的原版效率最佳解。';
+const intro=m==='free'?'現有最終配置。可勾選規劃各階段的學習順序。':'規劃實際學習順序，留意已學武功永久累計造成的經驗衰減。';
 const checks=r.arts.map((a,j)=>{
 const at=learnAt(i,j),active=at&&stages.indexOf(at)<=sidx;
 return '<label class="planner-item"><input type="checkbox" '+(active?'checked':'')+' onchange="setLearn('+i+','+j+',this.checked?stage():\'\')"><span>'+esc(a.name)+' <span class="q q'+a.q+'">'+qualityNames[a.q]+'</span> <span class="small">'+esc(a.role)+'</span></span></label>'
 }).join('');
-return '<section class="planner"><h3>初期至畢業 · 學習規劃</h3><p class="small">'+intro+'</p><p class="small">目前階段：'+stageNames[s]+'。勾選代表此階段或之前已學會；切換階段可逐步登記。未勾選不代表武學不可取得。</p><div class="planner-grid">'+checks+'</div><div class="planner-stats" id="plan-stats-'+i+'"></div><p class="small">計算採用上方輸入的角色累計已學數作為基準，僅將本規劃新增且不重複的武功計入；若基準數已包含這些武功，請勿重複計算。此規劃暫存於頁面，重新整理會清除。</p></section>'
+return '<section class="planner"><h3>初期至畢業 · 學習規劃</h3><p class="small">'+intro+'</p><p class="small">目前階段：'+stageNames[s]+'。勾選代表此階段或之前已學會；切換階段可逐步登記。未勾選不代表武學不可取得。</p><div class="planner-grid">'+checks+'</div><div class="planner-stats" id="plan-stats-'+i+'"></div><p class="small">此處的已學數會疊加在經驗計算器輸入的數量上；請避免重複計入同一門武功。</p></section>'
 }
 function refreshPlanStats(){
 const sidx=stages.indexOf(stage());
@@ -37,7 +37,7 @@ const originalRender=render;
 render=function(){originalRender();refreshPlanStats()};
 function modeChange(){
 const m=mode(),s=stage();
-document.getElementById('mode-help').textContent=m==='free'?'無限制理論畢業：沿用既有九大流派 11 門最終配置。初期至後期仍需逐步驗證；下方學習勾選為個人規劃，不會修改畢業配置。':'原版養成規劃：依永久累計的同品質已學武功數計算經驗效率。原版最佳畢業組合尚未逐套驗證，請勿將現有 11 門視為已確認的原版最優解。';
+document.getElementById('mode-help').textContent=m==='free'?'無限制畢業：以流派最終戰鬥配置為主。':'原版養成：考慮累計學習數量與經驗衰減；最終配置仍在逐套核對。';
 originalRender();refreshPlanStats();
 }
 document.getElementById('build-mode').addEventListener('change',modeChange);
