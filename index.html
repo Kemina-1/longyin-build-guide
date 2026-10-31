@@ -127,7 +127,8 @@ function rangeCell(a,i,j){
  if(!cast&&!effect)return '<div class="range-pending">範圍待核<br><span>尚無可驗證的形狀對應</span></div>';
  const actual=info||{shape:'single',radius:1,status:'資料缺漏',note:'此模式沒有範圍代碼'};
  const svg=info?gridSvg(actual,a.name,mode):'<div class="range-missing">施放範圍待核<br><small>原始碼不足以判定格位</small></div>';
- return '<div class="range-widget" id="rw-'+key+'"><div class="range-switch"><button type="button" aria-label="切換範圍" title="切換施放／作用範圍" onclick="toggleArtRange('+i+','+j+')">‹</button><span>'+label+'</span><button type="button" aria-label="切換範圍" title="切換施放／作用範圍" onclick="toggleArtRange('+i+','+j+')">›</button></div><button type="button" class="range-zoom" title="點擊放大" aria-label="放大'+esc(a.name)+label+'" onclick="zoomArtRange('+i+','+j+')">'+svg+'</button><div class="range-status">'+actual.status+'</div></div>';
+ const controls=rangeSame(a)?'<span class="range-same">施放／作用相同</span>':'<button type="button" aria-label="上一種範圍" onclick="toggleArtRange('+i+','+j+')">‹</button><span>'+label+'</span><button type="button" aria-label="下一種範圍" onclick="toggleArtRange('+i+','+j+')">›</button>';
+ return '<div class="range-widget" id="rw-'+key+'"><div class="range-switch">'+controls+'</div><button type="button" class="range-zoom" title="點擊放大" aria-label="放大'+esc(a.name)+label+'" onclick="zoomArtRange('+i+','+j+')">'+svg+'</button><div class="range-status">'+actual.status+'</div></div>';
 }
 function toggleArtRange(i,j){
  const key=i+'-'+j;if(rangeSame(stageArts(roster[i],i)[j]))return;rangeModeState[key]=(rangeModeState[key]||'effect')==='effect'?'cast':'effect';
