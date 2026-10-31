@@ -149,7 +149,7 @@ function zoomArtRange(i,j){
 }
 function renderFaqRanges(){
  const el=document.getElementById('faq-range-gallery');if(!el)return;
- el.innerHTML='<div class="range-legend"><span><i style="background:#e0b979"></i>中心格</span><span><i style="background:#487dba"></i>示意範圍</span></div><div class="range-gallery">'+Object.keys(confirmedRangeShapes).map(name=>rangeGraphic({name},false)).join('')+'</div><p class="range-caption">已開始依使用者截圖逐格轉錄；目前僅展示可辨識的簡單格位。其餘複雜施放形狀仍待校正，不再依半徑或相同代碼猜測。</p>';
+ el.innerHTML='<div class="range-legend"><span><i style="background:#e0b979"></i>中心格</span><span><i style="background:#487dba"></i>示意範圍</span></div><div class="range-gallery">'+Object.entries(verifiedRange).filter(([name,v])=>v.effect&&v.effect.mask).map(([name,v])=>'<div class="range-card"><h4>'+esc(name)+'</h4>'+gridSvg(v.effect,name,'effect')+'<p>作用範圍 · 截圖逐格轉錄</p></div>').join('')+'</div><p class="range-caption">已開始依使用者截圖逐格轉錄；目前僅展示可辨識的簡單格位。其餘複雜施放形狀仍待校正，不再依半徑或相同代碼猜測。</p>';
 }
 function rangeGallery(arts){
  const entries=arts.filter(a=>confirmedRangeShapes[a.name]);if(!entries.length)return '';
