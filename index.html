@@ -75,40 +75,8 @@ function rangeGraphic(a,compact=false){
 const rangeModeState={};
 // 四張遊戲截圖：有亮紅「釋放範圍」時亮紅=施放、暗紅=作用；僅暗紅時兩者相同。
 // 不再依原始碼首位數字猜測幾何；只針對已驗證樣本與相同完整代碼做可追溯推算。
-const verifiedRange={
- '含光無形劍':{cast:{shape:'cross',radius:4},effect:{shape:'cross',radius:1},same:false},
- '無盡劍意':{effect:{shape:'diamond',radius:3},same:true},
- '劍十三式':{effect:{shape:'cross',radius:5},same:true},
- '星落九天':{cast:{shape:'ring',radius:3},effect:{shape:'square',radius:1},same:false},
- '飛針要訣':{cast:{shape:'ring',radius:4},effect:{shape:'single',radius:0},same:false},
- '鐵索漁網':{cast:{shape:'ring',radius:3},effect:{shape:'cross',radius:1},same:false},
- '善惡鏢':{cast:{shape:'ring',radius:4},effect:{shape:'single',radius:0},same:false},
- '霹靂雷火彈':{cast:{shape:'diamond',radius:3},effect:{shape:'square',radius:1},same:false},
- '扁鵲神針':{cast:{shape:'square',radius:3},effect:{shape:'single',radius:0},same:false},
- '獨孤劍法':{cast:{shape:'diamond',radius:3},effect:{shape:'cross',radius:1},same:false},
- '回風拂柳劍':{cast:{shape:'corners',radius:1},effect:{shape:'cross',radius:1},same:false},
- '奪魂三仙劍':{effect:{shape:'checker',radius:2},same:true},
- '玄真劍氣':{effect:{shape:'cross',radius:5},same:true},
- '太極劍道':{effect:{shape:'cross',radius:2},same:true},
- '天遁劍法':{cast:{shape:'cross',radius:4},effect:{shape:'cross',radius:1},same:false},
- '合盤掌':{cast:{shape:'square',radius:3},effect:{shape:'single',radius:0},same:false},
- '八極拳':{cast:{shape:'square',radius:1},effect:{shape:'single',radius:0},same:false},
- '飛鳳手':{effect:{shape:'checker',radius:2},same:true},
- '白虹貫日掌':{cast:{shape:'ring',radius:3},effect:{shape:'cross',radius:1},same:false},
- '照影神拳':{cast:{shape:'corners',radius:2},effect:{shape:'cross',radius:1},same:false},
- '降龍掌法':{effect:{shape:'checker',radius:3},same:true},
- '廣陵散曲功':{effect:{shape:'square',radius:4},same:true},
- '三路鞭法':{effect:{shape:'corners',radius:1},same:true},
- '子午鴛鴦鉞':{effect:{shape:'checker',radius:2},same:true},
- '萬化玄機刀':{effect:{shape:'square',radius:1},same:true},
- '戰八方藏刀式':{effect:{shape:'cross',radius:2},same:true},
- '風雪狂刀':{effect:{shape:'cross',radius:3},same:true},
- '回風拂柳劍法':{cast:{shape:'corners',radius:1},effect:{shape:'cross',radius:1},same:false},
- '靈犀一指':{cast:{shape:'diamond',radius:3},effect:{shape:'single',radius:0},same:false},
- '劈金碎玉掌':{effect:{shape:'cross',radius:2},same:true},
- '屠龍要術':{cast:{shape:'cross',radius:3},effect:{shape:'corners',radius:1},same:false}
-};
-// 不再跨武功套用未驗證的代碼→圖形對應；同一攻擊代碼也可能需要其他欄位決定形狀。
+// 先撤回未逐格校準的近似圖形。截圖已取得，但不代表已完成格位轉錄。
+const verifiedRange={};
 const inferredRangeCodes={cast:{},effect:{}};
 function artRangeData(a,mode){
  const src=(a.range||a.aoe)?a:nameLookup.get(a.raw||a.name)||a;
@@ -149,7 +117,7 @@ function rangeCell(a,i,j){
  const info=(mode==='cast'?cast:effect);
  const other=mode==='cast'?'effect':'cast';
  const label=rangeSame(a)?'施放＝作用':mode==='cast'?'施放範圍':'作用範圍';
- if(!cast&&!effect)return '<div class="range-pending">範圍待核<br><span>尚無可驗證的形狀對應</span></div>';
+ if(!cast&&!effect)return '<div class="range-pending">範圍待核<br><span>已取得截圖，逐格校正中</span></div>';
  const actual=info||{shape:'single',radius:1,status:'資料缺漏',note:'此模式沒有範圍代碼'};
  const svg=info?gridSvg(actual,a.name,mode):'<div class="range-missing">施放範圍待核<br><small>原始碼不足以判定格位</small></div>';
  const controls=rangeSame(a)?'<span class="range-same">施放／作用相同</span>':'<button type="button" aria-label="上一種範圍" onclick="toggleArtRange('+i+','+j+')">‹</button><span>'+label+'</span><button type="button" aria-label="下一種範圍" onclick="toggleArtRange('+i+','+j+')">›</button>';
@@ -170,7 +138,7 @@ function zoomArtRange(i,j){
 }
 function renderFaqRanges(){
  const el=document.getElementById('faq-range-gallery');if(!el)return;
- el.innerHTML='<div class="range-legend"><span><i style="background:#e0b979"></i>中心格</span><span><i style="background:#487dba"></i>示意範圍</span></div><div class="range-gallery">'+Object.keys(confirmedRangeShapes).map(name=>rangeGraphic({name},false)).join('')+'</div><p class="range-caption">四張遊戲截圖已核對含光無形劍、無盡劍意、劍十三式、星落九天；同完整代碼的其他武功標示「同碼推算」。</p>';
+ el.innerHTML='<div class="range-legend"><span><i style="background:#e0b979"></i>中心格</span><span><i style="background:#487dba"></i>示意範圍</span></div><div class="range-gallery">'+Object.keys(confirmedRangeShapes).map(name=>rangeGraphic({name},false)).join('')+'</div><p class="range-caption">先前近似格位圖已撤回。後續只顯示逐格核對完成的圖形，不再用幾何半徑或相同代碼推測命中格。</p>';
 }
 function rangeGallery(arts){
  const entries=arts.filter(a=>confirmedRangeShapes[a.name]);if(!entries.length)return '';
