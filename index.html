@@ -123,12 +123,14 @@ function gridSvg(info,name,mode){
 }
 function rangeCell(a,i,j){
  if(['內功','輕功','絕技'].includes(a.role))return '<span class="small">不適用</span>';
- const key=i+'-'+j,mode=rangeSame(a)?'effect':(rangeModeState[key]||'effect');
+ const key=i+'-'+j;
  const cast=artRangeData(a,'cast'),effect=artRangeData(a,'effect');
+ const preferred=rangeSame(a)?'effect':(rangeModeState[key]||'effect');
+ const mode=preferred==='effect'&&!effect&&cast?'cast':preferred==='cast'&&!cast&&effect?'effect':preferred;
  const info=(mode==='cast'?cast:effect);
  const other=mode==='cast'?'effect':'cast';
  const label=rangeSame(a)?'施放＝作用':mode==='cast'?'施放範圍':'作用範圍';
- if(!cast&&!effect)return '<div class="range-pending">範圍待核<br><span>已取得截圖，逐格校正中</span></div>';
+ if(!cast&&!effect)return '<div class="range-pending">範圍待核<br><span>尚無已驗證格位資料</span></div>';
  const actual=info||{status:'資料缺漏',note:'此模式尚未逐格轉錄'};
  const svg=info?gridSvg(actual,a.name,mode):'<div class="range-missing">此範圍待核<br><small>尚未逐格轉錄</small></div>';
  const controls=rangeSame(a)?'<span class="range-same">施放／作用相同</span>':'<button type="button" aria-label="上一種範圍" onclick="toggleArtRange('+i+','+j+')">‹</button><span>'+label+'</span><button type="button" aria-label="下一種範圍" onclick="toggleArtRange('+i+','+j+')">›</button>';
@@ -140,7 +142,10 @@ function toggleArtRange(i,j){
  if(el)el.outerHTML=rangeCell(a,i,j);
 }
 function zoomArtRange(i,j){
- const key=i+'-'+j,a=stageArts(roster[i],i)[j],mode=rangeSame(a)?'effect':(rangeModeState[key]||'effect'),info=artRangeData(a,mode);
+ const key=i+'-'+j,a=stageArts(roster[i],i)[j],preferred=rangeSame(a)?'effect':(rangeModeState[key]||'effect');
+ const cast=artRangeData(a,'cast'),effect=artRangeData(a,'effect');
+ const mode=preferred==='effect'&&!effect&&cast?'cast':preferred==='cast'&&!cast&&effect?'effect':preferred;
+ const info=mode==='cast'?cast:effect;
  const modal=document.getElementById('range-modal');if(!modal)return;
  document.getElementById('range-modal-title').textContent=a.name+' · '+(rangeSame(a)?'施放與作用範圍相同':mode==='cast'?'施放範圍':'作用範圍');
  document.getElementById('range-modal-figure').innerHTML=info?gridSvg(info,a.name,mode):'<p>此模式沒有可用的範圍資料。</p>';
