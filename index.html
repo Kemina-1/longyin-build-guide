@@ -76,7 +76,7 @@ render();
 }
 document.getElementById('build-mode').addEventListener('change',modeChange);
 document.getElementById('build-stage').addEventListener('change',modeChange);
-expRows();modeChange();
+
 
 function switchTab(tab){
 ['guides','catalog','calculator'].forEach(x=>{const el=document.getElementById('tab-'+x);el.hidden=x!==tab});
@@ -109,4 +109,5 @@ document.getElementById('catalog-more').hidden=items.length<=catalogLimit;
 document.getElementById('catalog-search').addEventListener('input',()=>{catalogLimit=60;renderCatalog()});
 catalogType.addEventListener('change',()=>{catalogLimit=60;renderCatalog()});
 catalogQuality.addEventListener('change',()=>{catalogLimit=60;renderCatalog()});
+expRows();modeChange();
 </script></body></html>
