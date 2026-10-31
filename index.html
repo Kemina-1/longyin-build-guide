@@ -140,7 +140,7 @@ function toggleArtRange(i,j){
  if(el)el.outerHTML=rangeCell(a,i,j);
 }
 function zoomArtRange(i,j){
- const key=i+'-'+j,mode=rangeModeState[key]||'effect',a=stageArts(roster[i],i)[j],info=artRangeData(a,mode);
+ const key=i+'-'+j,a=stageArts(roster[i],i)[j],mode=rangeSame(a)?'effect':(rangeModeState[key]||'effect'),info=artRangeData(a,mode);
  const modal=document.getElementById('range-modal');if(!modal)return;
  document.getElementById('range-modal-title').textContent=a.name+' · '+(rangeSame(a)?'施放與作用範圍相同':mode==='cast'?'施放範圍':'作用範圍');
  document.getElementById('range-modal-figure').innerHTML=info?gridSvg(info,a.name,mode):'<p>此模式沒有可用的範圍資料。</p>';
