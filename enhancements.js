@@ -1,0 +1,61 @@
+(()=>{'use strict';
+const $=id=>document.getElementById(id),safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const arts=window.fullArts|| (typeof fullArts!=='undefined'?fullArts:[]);
+if(!Array.isArray(arts)||!arts.length)return;
+const key='longyin-enhancements-v1',defaultState={favorites:[],compare:[],builds:[],selected:[],buildName:'我的武學配置'};
+let state;try{state=Object.assign({},defaultState,JSON.parse(localStorage.getItem(key)||'{}'))}catch{state={...defaultState}}
+for(const k of ['favorites','compare','builds','selected'])if(!Array.isArray(state[k]))state[k]=[];
+const save=()=>{try{localStorage.setItem(key,JSON.stringify(state))}catch(e){console.warn('保存失敗',e)}};
+const name=a=>typeof artName==='function'?artName(a):a.name;
+const lookup=id=>arts.find(a=>Number(a.id)===Number(id));
+const range=a=>typeof resolvedRangeCodes==='function'?resolvedRangeCodes(a):null;
+const flags=a=>{const r=range(a);if(!r)return '無範圍';const c=typeof artRangeData==='function'?artRangeData(a,'cast'):null,e=typeof artRangeData==='function'?artRangeData(a,'effect'):null;return c?.status==='截圖格位'||e?.status==='截圖格位'?'截圖格位':c?.mask&&e?.mask?'公式推算':'特殊待核'};
+const quality=a=>(typeof qualityNames!=='undefined'?qualityNames[a.level]:a.level)||'';
+const btn=(text,fn,klass='')=>{const b=document.createElement('button');b.type='button';b.textContent=text;b.className=klass;b.addEventListener('click',fn);return b};
+const toolbar=$('catalog-search')?.parentElement;
+if(toolbar){
+ const rangeSelect=document.createElement('select');rangeSelect.id='enh-range';rangeSelect.setAttribute('aria-label','範圍驗證狀態');
+ rangeSelect.innerHTML='<option value="">全部範圍狀態</option>'+['截圖格位','公式推算','特殊待核','無範圍'].map(v=>'<option>'+v+'</option>').join('');
+ const favorites=document.createElement('label');favorites.className='enh-check';favorites.innerHTML='<input type="checkbox" id="enh-favorites-only">只看收藏';
+ const sort=document.createElement('select');sort.id='enh-sort';sort.setAttribute('aria-label','排序方式');sort.innerHTML='<option value="id">原始編號</option><option value="name">武功名稱</option><option value="quality">品質由高到低</option>';
+ toolbar.append(rangeSelect,favorites,sort);
+ const oldRender=window.renderCatalog||renderCatalog;
+ window.renderCatalog=function(){
+  oldRender();
+  const term=$('catalog-search').value.trim().toLowerCase(),type=$('catalog-type').value,q=$('catalog-quality').value;
+  const matches=arts.filter(a=>(!type||a.type===type)&&(!q||String(a.level)===q)&&(!term||[a.name,name(a),a.desc,a.type,...(a.attrs||[]),...(a.upgradeEffect||[]),...(a.damageBonus||[])].join(' ').toLowerCase().includes(term))&&(!rangeSelect.value||flags(a)===rangeSelect.value)&&(!$('enh-favorites-only').checked||state.favorites.includes(a.id)));
+  matches.sort((a,b)=>sort.value==='quality'?b.level-a.level||a.id-b.id:sort.value==='name'?name(a).localeCompare(name(b),'zh-Hant'):a.id-b.id);
+  $('catalog-count').textContent='武功資料 '+arts.length+' 門 · 符合條件 '+matches.length+' 門';
+  const list=$('catalog-results');list.innerHTML=matches.slice(0,window.catalogLimit||catalogLimit).map(a=>{
+   const fmt=typeof formatEffectValue==='function'?formatEffectValue:x=>x;
+   const effect=(a.attrs||[]).map(fmt).join('、')||'未記載',bonus=(a.damageBonus||[]).map(typeof zh==='function'?zh:x=>x).join('、')||'不適用',training=(a.upgradeEffect||[]).map(fmt).join('、')||'未記載';
+   return '<article class="catalog-entry"><div class="enh-card-head"><h3>'+safe(name(a))+'</h3><span class="enh-status">'+safe(flags(a))+'</span></div><div class="small">'+safe(a.type)+' · '+safe(quality(a))+' · 編號 '+a.id+'</div><p>'+safe(a.desc||'未記載')+'</p><div class="small"><b>附加效果：</b>'+safe(effect)+'</div><div class="small"><b>傷害權重：</b>'+safe(bonus)+'</div><div class="small"><b>修煉效果：</b>'+safe(training)+'</div><div class="enh-actions"><button data-act="fav" data-id="'+a.id+'">'+(state.favorites.includes(a.id)?'★ 已收藏':'☆ 收藏')+'</button><button data-act="compare" data-id="'+a.id+'">'+(state.compare.includes(a.id)?'✓ 已加入比較':'加入比較')+'</button><button data-act="select" data-id="'+a.id+'">'+(state.selected.includes(a.id)?'✓ 已加入構築':'加入構築')+'</button></div>'+(typeof catalogRangeHtml==='function'?catalogRangeHtml(a):'')+'</article>';
+  }).join('')||'<p>沒有符合條件的武功。</p>';
+  $('catalog-more').hidden=matches.length<=(window.catalogLimit||catalogLimit);
+ };
+ for(const el of [rangeSelect,sort,$('enh-favorites-only')])el.addEventListener('change',()=>{catalogLimit=60;window.renderCatalog()});
+ $('catalog-results').addEventListener('click',e=>{const b=e.target.closest('button[data-act]');if(!b)return;const id=Number(b.dataset.id),act=b.dataset.act,prop=act==='fav'?'favorites':act==='compare'?'compare':'selected';let arr=state[prop];if(arr.includes(id))state[prop]=arr.filter(x=>x!==id);else{if(prop==='compare'&&arr.length>=3){alert('最多比較三招武功');return}if(prop==='selected'&&arr.length>=11){alert('構築最多 11 門武功');return}arr.push(id)}save();window.renderCatalog();renderCompare();renderBuilder()});
+}
+const nav=document.querySelector('nav');const tabsRoot=$('tab-catalog')?.parentElement;
+function addTab(id,title){const b=btn(title,()=>{if(typeof switchTab==='function')switchTab(id);document.querySelectorAll('.tabview,#tab-guides').forEach(x=>x.hidden=x.id!=='tab-'+id);document.querySelectorAll('.navbtn').forEach(x=>x.classList.toggle('active',x.dataset.tab===id))},'navbtn');b.dataset.tab=id;nav?.append(b);const sec=document.createElement('section');sec.id='tab-'+id;sec.className='tabview';sec.hidden=true;tabsRoot?.append(sec);return sec}
+const compare=addTab('compare','武學比較');compare.innerHTML='<h2>武學比較</h2><p class="muted">從圖鑑加入最多三招，並排比較原始效果與範圍。</p><div id="enh-compare"></div>';
+const builder=addTab('builder','自訂構築');builder.innerHTML='<h2>自訂角色構築</h2><p class="muted">最多選擇 11 門武學。此功能記錄個人配置，不會將配置視為已驗證的最佳搭配。</p><div class="toolbar"><input id="enh-build-name" maxlength="80" placeholder="配置名稱"><button id="enh-save-build">儲存配置</button><button id="enh-export">匯出 JSON</button><button id="enh-import">匯入 JSON</button><button id="enh-share">複製分享連結</button></div><div id="enh-builder"></div><h3>已保存配置</h3><div id="enh-saved"></div><input type="file" id="enh-file" accept="application/json,.json" hidden>';
+$('enh-build-name').value=state.buildName||'我的武學配置';$('enh-build-name').addEventListener('input',e=>{state.buildName=e.target.value;save()});
+const download=(filename,obj)=>{const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),500)};
+const validate=ids=>[...new Set((Array.isArray(ids)?ids:[]).map(Number).filter(n=>Number.isInteger(n)&&lookup(n)))].slice(0,11);
+$('enh-save-build').onclick=()=>{state.builds.push({name:state.buildName||'未命名配置',ids:[...state.selected],created:new Date().toISOString()});save();renderBuilder()};
+$('enh-export').onclick=()=>download('龍胤武學構築備份.json',{version:1,...state});
+$('enh-import').onclick=()=>$('enh-file').click();
+$('enh-file').onchange=async e=>{const file=e.target.files?.[0];if(!file)return;try{const data=JSON.parse(await file.text());if(data.version!==1||!Array.isArray(data.selected)||!Array.isArray(data.builds))throw Error('不支援的備份格式');state.selected=validate(data.selected);state.favorites=validateAll(data.favorites);state.compare=validateAll(data.compare).slice(0,3);state.builds=data.builds.filter(b=>b&&Array.isArray(b.ids)).slice(0,100).map(b=>({name:String(b.name||'未命名').slice(0,80),ids:validate(b.ids),created:b.created}));state.buildName=String(data.buildName||'我的武學配置').slice(0,80);$('enh-build-name').value=state.buildName;save();renderBuilder();renderCompare();window.renderCatalog();alert('已匯入備份')}catch(err){alert('匯入失敗：'+err.message)}e.target.value=''};
+function validateAll(ids){return [...new Set((Array.isArray(ids)?ids:[]).map(Number).filter(n=>Number.isInteger(n)&&lookup(n)))].slice(0,1100)}
+$('enh-share').onclick=async()=>{const u=new URL(location.href);u.searchParams.set('build',state.selected.join('.'));u.searchParams.set('buildName',state.buildName);try{await navigator.clipboard.writeText(u.toString());alert('已複製構築分享連結')}catch{prompt('複製構築連結',u.toString())}};
+try{const p=new URLSearchParams(location.search);if(p.has('build')){state.selected=validate(p.get('build').split('.'));state.buildName=(p.get('buildName')||'分享構築').slice(0,80);$('enh-build-name').value=state.buildName;save()}}catch{}
+function effectText(a){return [...(a.attrs||[]),...(a.damageBonus||[])].join('、')}
+function renderCompare(){const list=state.compare.map(lookup).filter(Boolean);$('enh-compare').innerHTML=list.length?'<div class="enh-compare-grid">'+list.map(a=>'<article class="card"><h3>'+safe(name(a))+'</h3><p class="small">'+safe(a.type)+' · '+safe(quality(a))+' · '+safe(flags(a))+'</p><p>'+safe(a.desc||'')+'</p><p><b>屬性與加成：</b>'+safe(effectText(a))+'</p><p><b>修煉效果：</b>'+safe((a.upgradeEffect||[]).join('、'))+'</p>'+(typeof catalogRangeHtml==='function'?catalogRangeHtml(a):'')+'<button data-remove="'+a.id+'">移除比較</button></article>').join('')+'</div>':'<p class="muted">尚未選擇武功。請到武功圖鑑點選「加入比較」。</p>'}
+compare.addEventListener('click',e=>{const b=e.target.closest('[data-remove]');if(!b)return;state.compare=state.compare.filter(x=>x!==Number(b.dataset.remove));save();renderCompare();window.renderCatalog()});
+function renderBuilder(){const list=state.selected.map(lookup).filter(Boolean);const counts={};list.forEach(a=>counts[a.type]=(counts[a.type]||0)+1);$('enh-builder').innerHTML='<p><b>目前配置 '+list.length+'/11 門</b> · '+safe(Object.entries(counts).map(([k,v])=>k+' '+v).join('、')||'尚未選擇')+'</p>'+(list.length?'<div class="enh-build-list">'+list.map(a=>'<div class="enh-build-item"><b>'+safe(name(a))+'</b><span class="small">'+safe(a.type)+' · '+safe(quality(a))+'</span><button data-unselect="'+a.id+'">移除</button></div>').join('')+'</div><details><summary>全部武學屬性加成（原始條目，未合併同名數值）</summary><p>'+safe(list.map(a=>name(a)+'：'+effectText(a)).join('\n'))+'</p></details>':'<p class="muted">請到武功圖鑑點選「加入構築」。</p>');
+$('enh-saved').innerHTML=state.builds.map((b,i)=>'<div class="enh-build-item"><span>'+safe(b.name)+' <small>('+b.ids.length+' 門)</small></span><span><button data-load="'+i+'">載入</button> <button data-delete="'+i+'">刪除</button></span></div>').join('')||'<p class="muted">尚無保存的配置。</p>'}
+builder.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.unselect){state.selected=state.selected.filter(x=>x!==Number(b.dataset.unselect))}else if(b.dataset.load){const saved=state.builds[Number(b.dataset.load)];state.selected=validate(saved.ids);state.buildName=saved.name;$('enh-build-name').value=state.buildName}else if(b.dataset.delete){state.builds.splice(Number(b.dataset.delete),1)}else return;save();renderBuilder();window.renderCatalog()});
+const css=document.createElement('style');css.textContent='.enh-check{display:inline-flex;align-items:center;gap:6px;padding:5px}.enh-check input{width:auto}.enh-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.enh-card-head h3{margin:0}.enh-status{font-size:11px;color:#e0b979;border:1px solid #68583b;padding:2px 7px;border-radius:5px;white-space:nowrap}.enh-actions{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0}.enh-actions button{font-size:12px;padding:6px 9px}.enh-compare-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:12px}.enh-build-list{display:grid;gap:6px}.enh-build-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px;border:1px solid var(--line);border-radius:8px}.enh-build-item button{padding:5px 10px}.catalog-ranges svg,.enh-compare-grid svg{max-width:100%;height:auto}.catalog-entry{min-width:0;overflow-wrap:anywhere}@media(max-width:600px){.toolbar>input,.toolbar>select{max-width:100%;flex:1 1 160px}.enh-build-item{flex-wrap:wrap}.enh-compare-grid{grid-template-columns:1fr}}';document.head.append(css);
+renderBuilder();renderCompare();window.renderCatalog();
+})();
