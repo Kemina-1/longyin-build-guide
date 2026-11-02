@@ -237,7 +237,7 @@ document.getElementById('build-stage').addEventListener('change',modeChange);
 
 
 function switchTab(tab){
-['guides','catalog','calculator','faq'].forEach(x=>{const el=document.getElementById('tab-'+x);el.hidden=x!==tab});
+document.querySelectorAll('[id^="tab-"]').forEach(el=>{el.hidden=el.id!=='tab-'+tab});
 document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
 if(tab==='catalog')renderCatalog();if(tab==='faq')renderFaqRanges()
 }
