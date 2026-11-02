@@ -107,7 +107,7 @@ function resolvedRangeCodes(a){
  const p=artRangeCodes(a);if(!p)return null;
  let [cast,effect]=p;
  if(cast==='4,0,0'&&effect==='7,0,0')return null;
- if(cast==='4,0,0')cast=effect;
+ if(cast==='4,0,0'&&/^[58],/.test(effect))cast='DIRECTIONAL_CAST'; else if(cast==='4,0,0')cast=effect;
  if(effect==='7,0,0')effect=cast;
  return {cast,effect,rawCast:p[0],rawEffect:p[1]};
 }
@@ -124,13 +124,14 @@ function generatedRangeMask(code){
   }rows.push(line);
  }return rows;
 }
+function fourDirectionCastMask(mask){if(!mask)return null;const h=mask.length,w=Math.max(...mask.map(x=>x.length)),cx=Math.floor(w/2),cy=Math.floor(h/2),set=new Set();for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(mask[y][x]==='X'){const a=x-cx,b=y-cy;[[a,b],[-b,a],[-a,-b],[b,-a]].forEach(([u,v])=>set.add(u+','+v))}const r=Math.max(cx,cy,...[...set].flatMap(p=>p.split(',').map(Number).map(Math.abs)));return Array.from({length:2*r+1},(_,iy)=>Array.from({length:2*r+1},(_,ix)=>{const x=ix-r,y=iy-r;return x===0&&y===0?'O':set.has(x+','+y)?'X':'.'}).join(''))}
 function artRangeData(a,mode){
  const codes=resolvedRangeCodes(a),v=verifiedRange[a.name]||verifiedRange[zh(a.raw||a.name)];
- if(v){const d=(mode==='cast'&&v.same)?v.effect:v[mode];if(d)return {...d,status:'截圖格位',note:v.same?'只有暗紅：施放＝作用':'依原圖轉錄',raw:codes?codes[mode]:'截圖'};}
+ if(v){const d=(mode==='cast'&&v.same)?v.effect:v[mode];if(mode==='cast'&&!v.same&&codes?.rawCast==='4,0,0'&&/^[58],/.test(codes.rawEffect)&&v.effect?.mask)return {mask:fourDirectionCastMask(v.effect.mask),status:'方向性施放推算',note:'四方向可選；由單方向作用格旋轉推算',raw:codes.rawCast};if(d)return {...d,status:'截圖格位',note:v.same?'只有暗紅：施放＝作用':'依原圖轉錄',raw:codes?codes[mode]:'截圖'};}
  if(!codes)return null;
- const code=codes[mode],mask=generatedRangeMask(code);
+ const code=codes[mode],mask=code==='DIRECTIONAL_CAST'?null:generatedRangeMask(code);
  if(mask)return {mask,status:'代碼公式推算',note:'依原始代碼生成；未逐招截圖驗證',raw:code};
- return {mask:null,status:'特殊代碼待核',note:'原始代碼已收錄，特殊格位尚未驗證',raw:code};
+ return {mask:null,status:'特殊代碼待核',note:'原始代碼已收錄，特殊格位尚未驗證',raw:code==='DIRECTIONAL_CAST'?codes.rawCast:code};
 }
 function rangeSame(a){const v=verifiedRange[a.name];if(v&&v.same)return true;const c=resolvedRangeCodes(a);return !!(c&&c.cast===c.effect);}
 function gridSvg(info,name,mode){
