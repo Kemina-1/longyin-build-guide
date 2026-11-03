@@ -38,9 +38,12 @@ if(toolbar){
 }
 const nav=document.querySelector('nav');const tabsRoot=$('tab-catalog')?.parentElement;
 function addTab(id,title){const b=btn(title,()=>{if(typeof switchTab==='function')switchTab(id);document.querySelectorAll('.tabview,#tab-guides').forEach(x=>x.hidden=x.id!=='tab-'+id);document.querySelectorAll('.navbtn').forEach(x=>x.classList.toggle('active',x.dataset.tab===id))},'navbtn');b.dataset.tab=id;nav?.append(b);const sec=document.createElement('section');sec.id='tab-'+id;sec.className='tabview';sec.hidden=true;tabsRoot?.append(sec);return sec}
-const compare=addTab('compare','武學比較');compare.innerHTML='<h2>武學比較</h2><p class="muted">從圖鑑加入最多三招，並排比較原始效果與範圍。</p><div id="enh-compare"></div>';
-const builder=addTab('builder','自訂構築');builder.innerHTML='<h2>自訂角色構築</h2><p class="muted">最多選擇 11 門武學。此功能記錄個人配置，不會將配置視為已驗證的最佳搭配。</p><div class="toolbar"><input id="enh-build-name" maxlength="80" placeholder="配置名稱"><button id="enh-save-build">儲存配置</button><button id="enh-export">匯出 JSON</button><button id="enh-import">匯入 JSON</button><button id="enh-share">複製分享連結</button></div><div id="enh-builder"></div><h3>已保存配置</h3><div id="enh-saved"></div><input type="file" id="enh-file" accept="application/json,.json" hidden>';
+const compare=addTab('compare','武學比較');
+nav?.querySelector('[data-tab="compare"]')?.remove();compare.innerHTML='<div class="toolbar"><button type="button" id="enh-back-builder">返回自訂構築</button></div><h2>武學比較</h2><p class="muted">從圖鑑加入最多三招，並排比較原始效果與範圍。</p><div id="enh-compare"></div>';
+const builder=addTab('builder','自訂構築');
+$('enh-back-builder').onclick=()=>switchTab('builder');builder.innerHTML='<h2>自訂角色構築</h2><div class="toolbar"><button type="button" id="enh-open-compare">查看武學比較（最多三招）</button></div><p class="muted">最多選擇 11 門武學。此功能記錄個人配置，不會將配置視為已驗證的最佳搭配。</p><div class="toolbar"><input id="enh-build-name" maxlength="80" placeholder="配置名稱"><button id="enh-save-build">儲存配置</button><button id="enh-export">匯出 JSON</button><button id="enh-import">匯入 JSON</button><button id="enh-share">複製分享連結</button></div><div id="enh-builder"></div><h3>已保存配置</h3><div id="enh-saved"></div><input type="file" id="enh-file" accept="application/json,.json" hidden>';
 $('enh-build-name').value=state.buildName||'我的武學配置';$('enh-build-name').addEventListener('input',e=>{state.buildName=e.target.value;save()});
+$('enh-open-compare').onclick=()=>switchTab('compare');
 const download=(filename,obj)=>{const blob=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(url),500)};
 const validate=ids=>[...new Set((Array.isArray(ids)?ids:[]).map(Number).filter(n=>Number.isInteger(n)&&lookup(n)))].slice(0,11);
 $('enh-save-build').onclick=()=>{state.builds.push({name:state.buildName||'未命名配置',ids:[...state.selected],created:new Date().toISOString()});save();renderBuilder()};
