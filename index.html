@@ -315,7 +315,7 @@ function catalogRangeHtml(a){
  const c=resolvedRangeCodes(a),cast=artRangeData(a,'cast'),effect=artRangeData(a,'effect');
  const previewCast=cast?.mask?cast:(v?.effect?.mask&&directionVerified.has(n)?{mask:fourDirectionCastMask(v.effect.mask)}:null);
  const panel=(val,label)=>'<div class="range-card"><b>'+label+'</b>'+(val?.mask?gridSvg(val,n,label==='施放範圍'?'cast':'effect'):'<p class="small">特殊格位待核：'+esc(val?.raw||'')+'</p>')+'<div class="small">'+esc(val?.status||'')+' · '+esc(val?.raw||'')+'</div></div>';
- if(previewCast?.mask&&effect?.mask)return '<details class="catalog-ranges"><summary>滑鼠互動預覽施放／作用範圍</summary>'+directionPreview(a,previewCast,effect)+'<div class="small">資料狀態：施放 '+esc(cast?.status||'待核')+'；作用 '+esc(effect.status||'待核')+'</div></details>';
+ if(previewCast?.mask&&effect?.mask)return '<details class="catalog-ranges" open><summary>滑鼠互動預覽施放／作用範圍（已展開）</summary>'+directionPreview(a,previewCast,effect)+'<div class="small">資料狀態：施放 '+esc(cast?.status||'待核')+'；作用 '+esc(effect.status||'待核')+'</div></details>';
  if(!c&&!v)return '';
  return '<details class="catalog-ranges"><summary>查看施放與作用範圍（部分待核）</summary><div class="range-gallery">'+panel(cast,'施放範圍')+panel(effect,'作用範圍')+'</div></details>';
 }
