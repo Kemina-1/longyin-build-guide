@@ -299,7 +299,7 @@ function directionPreview(a,cast,effect){
  const radiusY=Math.max(castCY,ch-1-castCY)+Math.max(effectCY,eh-1-effectCY);
  const boardW=same?cw:2*radiusX+1,boardH=same?ch:2*radiusY+1;
  const bx=Math.floor(boardW/2),by=Math.floor(boardH/2);
- const castAt=(x,y)=>castMask[y-by+castCY]?.[x-bx+castCX]==='X';
+ const castAt=(x,y)=>{const xx=x-bx+castCX,yy=y-by+castCY;return castMask[yy]?.[xx]==='X'||(castMask[yy]?.[xx]==='O'&&(x!==bx||y!==by));};
  let cells='';
  for(let y=0;y<boardH;y++)for(let x=0;x<boardW;x++){
   const selectable=castAt(x,y),isCenter=x===bx&&y===by;
