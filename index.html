@@ -269,16 +269,28 @@ function rotatedEffect(mask,dir){
  return out.map((row,y)=>row.map((v,x)=>x===cx&&y===cy?'O':v).join(''));
 }
 function directionPreview(a,cast,effect){
- const n=artName(a),key=verifiedRange[n]?n:(verifiedRange[zh(a.name)]?zh(a.name):(verifiedRange[a.name]?a.name:null)),v=key&&verifiedRange[key];
+ const n=artName(a),key=verifiedRange[n]?n:(verifiedRange[zh(a.name)]?zh(a.name):(verifiedRange[a.name]?a.name:null));
  if(!cast?.mask||!effect?.mask)return '';
- const mask=cast.mask,h=mask.length,w=Math.max(...mask.map(row=>row.length)),centerX=Math.floor(w/2),centerY=Math.floor(h/2),isDirectional=!!(key&&directionVerified.has(key));
- let cells='';for(let y=0;y<h;y++)for(let x=0;x<w;x++){
- const c=mask[y]?.[x]||'.',isCenter=x===centerX&&y===centerY;
- cells+='<rect data-grid-x="'+x+'" data-grid-y="'+y+'" x="'+(6+x*18)+'" y="'+(6+y*18)+'" width="16" height="16" rx="2" fill="'+(c==='X'?'#ab555c':'#253140')+'" stroke="#465364" stroke-width=".7"'+(c==='X'?' tabindex="0" role="button" aria-label="預覽此施放格位"':'')+'/>';
- if(isCenter)cells+='<circle cx="'+(6+x*18+8)+'" cy="'+(6+y*18+8)+'" r="6" fill="#e0b979" stroke="#151d28" stroke-width="2" pointer-events="none"/><circle cx="'+(6+x*18+8)+'" cy="'+(6+y*18+8)+'" r="2" fill="#172333" pointer-events="none"/>';
+ const same=rangeSame(a),isDirectional=!!(key&&directionVerified.has(key)&&!same);
+ const castMask=cast.mask,effectMask=effect.mask;
+ const ch=castMask.length,cw=Math.max(...castMask.map(row=>row.length)),eh=effectMask.length,ew=Math.max(...effectMask.map(row=>row.length));
+ const castCX=Math.floor(cw/2),castCY=Math.floor(ch/2),effectCX=Math.floor(ew/2),effectCY=Math.floor(eh/2);
+ // 施放最外緣為作用中心時，格位圖必須容納「施放半徑＋作用半徑」。
+ const radiusX=Math.max(castCX,cw-1-castCX)+Math.max(effectCX,ew-1-effectCX);
+ const radiusY=Math.max(castCY,ch-1-castCY)+Math.max(effectCY,eh-1-effectCY);
+ const boardW=same?cw:2*radiusX+1,boardH=same?ch:2*radiusY+1;
+ const bx=Math.floor(boardW/2),by=Math.floor(boardH/2);
+ const castAt=(x,y)=>castMask[y-by+castCY]?.[x-bx+castCX]==='X';
+ let cells='';
+ for(let y=0;y<boardH;y++)for(let x=0;x<boardW;x++){
+  const selectable=castAt(x,y),isCenter=x===bx&&y===by;
+  cells+='<rect data-grid-x="'+x+'" data-grid-y="'+y+'" x="'+(6+x*18)+'" y="'+(6+y*18)+'" width="16" height="16" rx="2" fill="'+(selectable?'#ab555c':'#253140')+'" stroke="#465364" stroke-width=".7"'+(selectable?' tabindex="0" role="button" aria-label="預覽此施放格位"':'')+'/>';
+  if(isCenter)cells+='<circle cx="'+(6+x*18+8)+'" cy="'+(6+y*18+8)+'" r="6" fill="#e0b979" stroke="#151d28" stroke-width="2" pointer-events="none"/><circle cx="'+(6+x*18+8)+'" cy="'+(6+y*18+8)+'" r="2" fill="#172333" pointer-events="none"/>';
  }
- const svg='<svg class="direction-grid" viewBox="0 0 '+(w*18+12)+' '+(h*18+12)+'" role="group" aria-label="'+esc(n)+' 施放與作用範圍互動格位">'+cells+'</svg>';
- return '<div class="direction-preview" data-name="'+esc(key||n)+'" data-dir="right" data-mode="'+(isDirectional?'direction':'target')+'" data-effect="'+encodeURIComponent(JSON.stringify(effect.mask))+'"><p class="small">將滑鼠移到<b>紅色施放格</b>，同一張圖預覽<b>深紅作用格</b>。金色圓點為人物位置；手機可點選。'+(isDirectional?'方向旋轉依單方向截圖推算，未逐方向實測。':'作用範圍依格位資料平移至滑鼠指定格；若武功有特殊方向或觸發規則，仍須遊戲實測。')+'</p><div class="direction-single">'+svg+'</div><div class="small direction-title" aria-live="polite">目前預覽：右方向（將滑鼠移到紅色格位）</div></div>';
+ const svg='<svg class="direction-grid" viewBox="0 0 '+(boardW*18+12)+' '+(boardH*18+12)+'" role="group" aria-label="'+esc(n)+' 施放與作用範圍互動格位">'+cells+'</svg>';
+ const mode=same?'same':isDirectional?'direction':'target';
+ const tip=same?'此招施放與作用範圍相同：滑鼠移到紅格時，只會將<b>原本範圍加深</b>，不會平移。':isDirectional?'此招依現有截圖做方向旋轉預覽，未逐方向實測。':'將滑鼠移到紅色施放格，深紅色作用範圍會以該格為中心顯示；外圈已預留延伸空間。特殊規則仍須遊戲核對。';
+ return '<div class="direction-preview" data-name="'+esc(key||n)+'" data-mode="'+mode+'" data-effect="'+encodeURIComponent(JSON.stringify(effectMask))+'"><p class="small">'+tip+' 金色圓點為人物位置；手機可點選。</p><div class="direction-single">'+svg+'</div><div class="small direction-title" aria-live="polite">滑鼠移到紅色格位即可預覽</div></div>';
 }
 function previewDirection(el,dir,cell){
  if(!el)return;
@@ -286,16 +298,16 @@ function previewDirection(el,dir,cell){
  const rects=[...svg.querySelectorAll('rect[data-grid-x]')],gridH=Math.max(...rects.map(r=>Number(r.dataset.gridY)))+1,gridW=Math.max(...rects.map(r=>Number(r.dataset.gridX)))+1;
  const cx=Math.floor(gridW/2),cy=Math.floor(gridH/2);
  let mask;try{mask=JSON.parse(decodeURIComponent(el.dataset.effect))}catch(e){return}
- const directional=el.dataset.mode==='direction';
- const result=directional?rotatedEffect(mask,dir):mask;
- const h=result.length,w=Math.max(...result.map(row=>row.length)),ox=directional?cx-Math.floor(w/2):Number(cell?.dataset.gridX??cx)-Math.floor(w/2),oy=directional?cy-Math.floor(h/2):Number(cell?.dataset.gridY??cy)-Math.floor(h/2);
+ const mode=el.dataset.mode, result=mode==='direction'?rotatedEffect(mask,dir):mask;
+ const h=result.length,w=Math.max(...result.map(row=>row.length));
+ const targetX=mode==='target'?Number(cell?.dataset.gridX??cx):cx,targetY=mode==='target'?Number(cell?.dataset.gridY??cy):cy;
+ const ox=targetX-Math.floor(w/2),oy=targetY-Math.floor(h/2);
  rects.forEach(rect=>{
-  const x=Number(rect.dataset.gridX),y=Number(rect.dataset.gridY),isCenter=x===cx&&y===cy,hit=result[y-oy]?.[x-ox]==='X',selectable=rect.hasAttribute('tabindex');
+  const x=Number(rect.dataset.gridX),y=Number(rect.dataset.gridY),isCenter=x===cx&&y===cy,hit=mode==='same'?rect.hasAttribute('tabindex'):result[y-oy]?.[x-ox]==='X',selectable=rect.hasAttribute('tabindex');
   rect.setAttribute('fill',isCenter?'#e0b979':hit?'#922c38':selectable?'#ab555c':'#253140');
   rect.setAttribute('stroke',hit?'#f2b0a9':'#465364');
  });
- el.dataset.dir=dir;
- el.querySelector('.direction-title').textContent=directional?'目前預覽：'+({up:'上',down:'下',left:'左',right:'右'}[dir])+'方向（旋轉推算）':'目前預覽：滑鼠指定施放格位（作用格位平移示意）';
+ el.querySelector('.direction-title').textContent=mode==='same'?'施放範圍＝作用範圍（固定不移動）':mode==='direction'?'目前預覽：'+({up:'上',down:'下',left:'左',right:'右'}[dir])+'方向（旋轉推算）':'目前預覽：以指定格為中心，顯示完整作用範圍';
 }
 function cellDirection(cell){
  const svg=cell?.closest('.direction-grid');if(!svg)return null;
