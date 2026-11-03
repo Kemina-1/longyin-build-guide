@@ -269,7 +269,7 @@ function rotatedEffect(mask,dir){
  return out.map((row,y)=>row.map((v,x)=>x===cx&&y===cy?'O':v).join(''));
 }
 function directionPreview(a,cast,effect){
- const n=artName(a),key=verifiedRange[n]?n:(verifiedRange[a.name]?a.name:null),v=key&&verifiedRange[key];
+ const n=artName(a),key=verifiedRange[n]?n:(verifiedRange[zh(a.name)]?zh(a.name):(verifiedRange[a.name]?a.name:null)),v=key&&verifiedRange[key];
  if(!key||(!directionVerified.has(n)&&!directionVerified.has(a.name))||!v?.effect?.mask||!cast?.mask)return '';
  const mask=cast.mask,h=mask.length,w=Math.max(...mask.map(row=>row.length)),centerX=Math.floor(w/2),centerY=Math.floor(h/2);
  let cells='';for(let y=0;y<h;y++)for(let x=0;x<w;x++){
@@ -302,7 +302,16 @@ document.addEventListener('pointermove',onDirectionCell);
 document.addEventListener('click',onDirectionCell);
 document.addEventListener('focusin',onDirectionCell);
 document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches?.('.direction-grid rect[tabindex]')){e.preventDefault();onDirectionCell(e)}});
-function catalogRangeHtml(a){const c=resolvedRangeCodes(a);if(!c)return '';const cast=artRangeData(a,'cast'),effect=artRangeData(a,'effect');const panel=(v,label)=>'<div class="range-card"><b>'+label+'</b>'+(v&&v.mask?gridSvg(v,artName(a),label==='施放範圍'?'cast':'effect'):'<p class="small">特殊格位待核：'+esc(v?.raw||'')+'</p>')+'<div class="small">'+esc(v?.status||'')+' · '+esc(v?.raw||'')+'</div></div>';return '<details class="catalog-ranges"><summary>查看施放與作用範圍</summary>'+(directionPreview(a,cast,effect)||'<div class="range-gallery">'+panel(cast,'施放範圍')+panel(effect,'作用範圍')+'</div>')+'</details>';}
+function catalogRangeHtml(a){
+ const n=artName(a),v=verifiedRange[n]||verifiedRange[zh(a.name)]||verifiedRange[a.name];
+ const c=resolvedRangeCodes(a),cast=artRangeData(a,'cast'),effect=artRangeData(a,'effect');
+ const canPreview=(directionVerified.has(n)||directionVerified.has(zh(a.name)))&&!!v?.effect?.mask;
+ const previewCast=cast?.mask?cast:{mask:fourDirectionCastMask(v?.effect?.mask)};
+ const panel=(val,label)=>'<div class="range-card"><b>'+label+'</b>'+(val?.mask?gridSvg(val,n,label==='施放範圍'?'cast':'effect'):'<p class="small">特殊格位待核：'+esc(val?.raw||'')+'</p>')+'<div class="small">'+esc(val?.status||'')+' · '+esc(val?.raw||'')+'</div></div>';
+ if(canPreview&&previewCast?.mask)return '<details class="catalog-ranges" open><summary>滑鼠移動預覽施放／作用範圍（互動）</summary>'+directionPreview(a,previewCast,effect)+'</details>';
+ if(!c)return '';
+ return '<details class="catalog-ranges"><summary>查看施放與作用範圍</summary><div class="range-gallery">'+panel(cast,'施放範圍')+panel(effect,'作用範圍')+'</div></details>';
+}
 function renderCatalog(){
 const term=document.getElementById('catalog-search').value.trim().toLowerCase(),type=catalogType.value,q=catalogQuality.value;
 const items=fullArts.filter(a=>(!type||a.type===type)&&(!q||String(a.level)===q)&&(!term||[a.name,artName(a),a.desc,a.type,...(a.attrs||[]),...(a.upgradeEffect||[]),...(a.damageBonus||[])].join(' ').toLowerCase().includes(term)));
